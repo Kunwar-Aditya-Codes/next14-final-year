@@ -56,6 +56,11 @@ const Camera = () => {
       setIsLoading(false)
   }
 
+  const handleReset = () => {
+    setImageData("");
+    setQuestion("");
+  };
+
 
 
   return (
@@ -102,7 +107,16 @@ const Camera = () => {
       >
         Submit
       </button>
+
+      <button
+        onClick={handleReset}
+        className='bg-white/10 rounded-lg border text-base px-4 py-2'
+      >
+        Reset
+      </button>
         <div className='mt-28'>
+
+       
                
        {isLoading ? <p className='text-center text-white animate-pulse text-lg'>Fetching response...</p> : null}     
       {(!isLoading && response)? <p className='text-white text-lg text-justify'>{response}</p> : null}

@@ -7,30 +7,41 @@ interface ImageData {
 }
 
 export const POST = async (req: NextRequest) => {
-  const data: ImageData = await req.json();
+  try {
+    const data: ImageData = await req.json();
 
+    const llava = new Ollama({
+      baseUrl: 'http://localhost:11434',
+      model: 'llava:latest',
+    }).bind({
+      images: [data.imageData]
+    })
 
-  const ollama = new Ollama({
-    baseUrl: 'http://localhost:11434',
-    model: 'llava:latest',
-  }).bind({
-    images: [data.imageData]
-  })
+    const llavaStream = await llava.stream(`Answer this question from the provided image - "${data.question}". Don't add extra response. Answer only what is asked`);
+    const llavaAnswer = await streamToString(llavaStream);
 
+    const mistral = new Ollama({
+      baseUrl: 'http://localhost:11434',
+      model: 'mistral:latest',
+    });
 
+    const mistralStream = await mistral.stream(`Take this as input - "${llavaAnswer}" and answer this question from the provided input - "${data.question}"`);
+    const mistralAnswer = await streamToString(mistralStream);
 
-  const stream = await ollama.stream(data.question);
+    console.log('LLava Answer:', llavaAnswer);
+    console.log('Mistral Answer:', mistralAnswer);
 
-  
+    return Response.json({ success: true  , answer: llavaAnswer});
+  } catch (error) {
+    console.error('Error:', error);
+    return Response.json({ success: false, error: 'Unknown error' }, { status: 500 });
+  }
+};
 
+async function streamToString(stream: any) {
   const chunks = [];
   for await (const chunk of stream) {
     chunks.push(chunk);
   }
-
-  const answer = chunks.join('');
-
-  console.log(answer)
-
-  return Response.json({answer});
-};
+  return chunks.join('');
+}
